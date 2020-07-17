@@ -1,4 +1,5 @@
 const { RestrictedWord } = require("../models/word.restricted");
+const { ServerSettings } = require("../models/server.settings");
 
 const allow = async word =>
 {
@@ -24,7 +25,19 @@ module.exports = {
     const word = args[0];
     const { channel, member } = msg;
 
-    if (member.roles.cache.some(r => r.name === "Адмен"))
+    const settings = await ServerSettings.findOne({ where: { name: channel.guild.name } });
+
+    if (!settings)
+    {
+      const setup = require("./server.setup");
+      const { prefix } = require("../config.json");
+
+      channel.send(`Сервер не настроен, настройте с помошью -> ${prefix}${setup.name}${setup.usage}`);
+      return;
+    }
+    const adminRole = settings.adminRole;
+
+    if (member.roles.cache.some(r => r.name === adminRole))
     {
       const exist = await exists(word);
 
@@ -39,7 +52,7 @@ module.exports = {
       }
     } else
     {
-      channel.send("эту команду могут использовать только люди с ролю 'Адмен'");
+      channel.send(`эту команду могут использовать только люди с ролю '${adminRole}'`);
     }
   }
 };
