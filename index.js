@@ -10,11 +10,36 @@ dotenv.config();
 const client    = new Discord.Client();
 client.commands = new Discord.Collection();
 
+const checkRestrict = async message =>
+{
+  const Sequelize = require('sequelize');
+  const words     = message.content.trim().split(" ");
+
+  const restrited = await Promise.all(words.map(async word =>
+  {
+    try
+    {
+      const restricted = await RestrictedWord.findOne({
+        where: {
+          name: {
+            [Sequelize.Op.like]: word.replace(/[^a-zA-Z ]/g, "")
+          }
+        }
+      });
+
+      if (restricted)
+      {
+        message.delete();
+        return true;
+      }
+    } catch (e) {}
+  }));
+
+  return restrited;
+};
+
 const handleTextMessage = async message =>
 {
-  const restricted = await RestrictedWord.findOne({ where: { name: message.content }}) !== null;
-
-  restricted && message.delete();
 };
 
 const handleCommandMessage = async message =>
@@ -50,7 +75,7 @@ const handleCommandMessage = async message =>
 
 const onMessage = async message =>
 {
-  if (!message.author.bot)
+  if (!message.author.bot && !(await checkRestrict(message)).some(r => r))
   {
     await message.content.startsWith(prefix)
       ?
@@ -78,4 +103,3 @@ client.on('ready', () =>
 client.on('message', onMessage);
 
 client.login(token);
-
