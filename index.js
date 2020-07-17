@@ -4,6 +4,7 @@ const dotenv  = require("dotenv");
 
 const { token, prefix }   = require('./config.json');
 const { RestrictedWord }  = require('./models/word.restricted');
+const { ServerSettings }  = require('./models/server.settings');
 
 dotenv.config();
 
@@ -35,12 +36,12 @@ const checkRestrict = async message =>
     } catch (e) {}
   }));
 
-  return restrited;
+  return restrited.some(r => r);
 };
 
 const handleTextMessage = async message =>
 {
-  const restricted = await checkRestrict(message).some(r => r)
+  const restricted = await checkRestrict(message);
 };
 
 const handleCommandMessage = async message =>
@@ -104,7 +105,10 @@ fs.readdirSync('./commands')
 client.on('ready', () =>
 {
   RestrictedWord.sync();
-	client.user.setActivity("お前は何を見ていますか？");
+  ServerSettings.sync();
+
+  client.user.setActivity("お前は何を見ていますか？");
+
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
