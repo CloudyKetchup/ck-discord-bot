@@ -40,6 +40,7 @@ const checkRestrict = async message =>
 
 const handleTextMessage = async message =>
 {
+  const restricted = await checkRestrict(message).some(r => r)
 };
 
 const handleCommandMessage = async message =>
@@ -51,6 +52,12 @@ const handleCommandMessage = async message =>
   {
     const command = client.commands.get(commandName);
 
+    if (!command)
+    {
+      message.channel.send("такой команды нету");
+      return;
+    }
+
     if (command.args && !args.length)
     {
       message.channel.send('а где параметры команды?');
@@ -61,10 +68,11 @@ const handleCommandMessage = async message =>
       }
     } else
     {
-      command ? await command.execute(message, args) : message.channel.send("такой команды нету");
+      await command.execute(message, args);
     }
   } catch (e)
   {
+    console.log(e)
     const ketchup = (await message.guild.members.fetch())
       .array()
       .filter(member => member.user.username === "CloudyKetchup")
@@ -75,7 +83,7 @@ const handleCommandMessage = async message =>
 
 const onMessage = async message =>
 {
-  if (!message.author.bot && !(await checkRestrict(message)).some(r => r))
+  if (!message.author.bot)
   {
     await message.content.startsWith(prefix)
       ?
