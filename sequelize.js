@@ -10,7 +10,7 @@ const {
 const sequelize = new Sequelize(DB_NAME, DB_USERNAME, DB_PASSWORD, {
   host: DB_HOSTNAME,
   dialect: "sqlite",
-  logging: true,
+  logging: false,
   storage: "database.sqlite"
 })
 

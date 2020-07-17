@@ -4,17 +4,44 @@ const dotenv  = require("dotenv");
 
 const { token, prefix }   = require('./config.json');
 const { RestrictedWord }  = require('./models/word.restricted');
+const { ServerSettings }  = require('./models/server.settings');
 
 dotenv.config();
 
 const client    = new Discord.Client();
 client.commands = new Discord.Collection();
 
+const checkRestrict = async message =>
+{
+  const Sequelize = require('sequelize');
+  const words     = message.content.trim().split(" ");
+
+  const restrited = await Promise.all(words.map(async word =>
+  {
+    try
+    {
+      const restricted = await RestrictedWord.findOne({
+        where: {
+          name: {
+            [Sequelize.Op.like]: word.replace(/[^a-zA-Z ]/g, "")
+          }
+        }
+      });
+
+      if (restricted)
+      {
+        message.delete();
+        return true;
+      }
+    } catch (e) {}
+  }));
+
+  return restrited.some(r => r);
+};
+
 const handleTextMessage = async message =>
 {
-  const restricted = await RestrictedWord.findOne({ where: { name: message.content }}) !== null;
-
-  restricted && message.delete();
+  const restricted = await checkRestrict(message);
 };
 
 const handleCommandMessage = async message =>
@@ -26,6 +53,12 @@ const handleCommandMessage = async message =>
   {
     const command = client.commands.get(commandName);
 
+    if (!command)
+    {
+      message.channel.send("такой команды нету");
+      return;
+    }
+
     if (command.args && !args.length)
     {
       message.channel.send('а где параметры команды?');
@@ -36,10 +69,11 @@ const handleCommandMessage = async message =>
       }
     } else
     {
-      command ? await command.execute(message, args) : message.channel.send("такой команды нету");
+      await command.execute(message, args);
     }
   } catch (e)
   {
+    console.log(e)
     const ketchup = (await message.guild.members.fetch())
       .array()
       .filter(member => member.user.username === "CloudyKetchup")
@@ -71,11 +105,13 @@ fs.readdirSync('./commands')
 client.on('ready', () =>
 {
   RestrictedWord.sync();
-	client.user.setActivity("お前は何を見ていますか？");
+  ServerSettings.sync();
+
+  client.user.setActivity("お前は何を見ていますか？");
+
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
 client.on('message', onMessage);
 
 client.login(token);
-
