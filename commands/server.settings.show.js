@@ -12,14 +12,17 @@ module.exports = {
     {
       if (msg.member.roles.cache.some(r => r.name === settings.adminRole))
       {
-        msg.channel.send(`Настройки:\n Роль админа -> ${settings.adminRole}`);
+        const { adminRole, streamer: { display_name } } = settings;
+
+        msg.channel.send(`Настройки:\n Роль админа -> ${adminRole}\n Стример -> ${display_name}`);
       }
     } else
     {
-      const setup = require("./server.setup");
-      const { prefix } = require("../config.json");
+      const { name, usage } = require("./server.setup");
+      const { prefix }      = require("../config.json");
 
-      msg.channel.send(`Настройки cервака отсутсвуют, ${prefix}${setup.name} ${setup.usage}`);
+      msg.channel.send(`Настройки cервака отсутсвуют, Команда ${prefix}${name} ${usage}`);
+      msg.channel.send(`Ну например ${prefix}${name} Админ BigLongFatGun`)
     }
   }
 };
