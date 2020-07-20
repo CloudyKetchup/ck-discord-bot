@@ -1,16 +1,18 @@
 const { sequelize } = require("../sequelize");
-const { Sequelize, DataTypes } = require("sequelize");
-
+const { DataTypes } = require("sequelize");
 
 const ServerSettings = sequelize.define("ServerSettings", {
-  name: {
+  guildId: {
     type: DataTypes.STRING,
     unique: true
   },
-  adminRole: { type: DataTypes.STRING },
-  streamer: { type: DataTypes.JSON }
+  name: {
+    type: DataTypes.STRING
+  },
+  adminRole: { type: DataTypes.STRING }
 });
 
 module.exports = {
-  ServerSettings: ServerSettings
+  ServerSettings,
+  model: ServerSettings
 };
