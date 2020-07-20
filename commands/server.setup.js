@@ -7,27 +7,9 @@ const validateAdmin = (msg, admin) =>
   return roleExist;
 };
 
-const validateStreamer = async streamer =>
-{
-  const twitch = require("../services/twitch");
-  const { TWITCH_CLIENT_ID } = require("../config.json");
-
-  const token       = await twitch.getToken();
-  const broadcaster = await twitch.getBroadcaster(streamer, TWITCH_CLIENT_ID, token);
-
-  if (broadcaster && broadcaster.login.toUpperCase() === streamer.toUpperCase())
-  {
-    const { id, login, display_name } = broadcaster;
-
-    return { data: { id: id, login: login, display_name: display_name } };
-  }
-  return { error: `Стример '${streamer}' не найден` };
-};
-
-const validateArgs = async (msg, admin, streamer) =>
+const validateArgs = async (msg, admin) =>
 {
   if (!admin) return { error: "А где админ?" };
-  if (!streamer) return { error: "А где стример?" };
 
   const adminValid = validateAdmin(msg, admin);
 
@@ -37,13 +19,18 @@ const validateArgs = async (msg, admin, streamer) =>
       error: `Роли '${admin}' не сушествует`
     };
   }
-  const { data, error } = await validateStreamer(streamer);
+  return { error: null };
+};
 
-  if (error)
+const settingsExist = async guildId =>
+{
+  const count = await ServerSettings.count({ where: { guildId: guildId }});
+
+  if (count !== 0)
   {
-    return { error: error };
+    return true;
   }
-  return { admin: admin, streamer: data };
+  return false;
 };
 
 module.exports = {
@@ -51,15 +38,26 @@ module.exports = {
   name: "server--setup",
   description: "Setup server",
   args: true,
-  usage: `<adminRole> <streamer>`,
+  usage: `<adminRole>`,
   async execute(msg, args)
   {
     const { channel } = msg;
+    const adminRole = args[0];
+
+    if (await settingsExist(channel.guild.id))
+    {
+      const { prefix } = require("../config.json");
+      const { name } = require("./server.settings.drop");
+
+      channel.send(`Настройки для сервера уже присутвуют, для сброса -> ${prefix}${name}`);
+      channel.send(":warning: Но будьте уверены что делайте!")
+      return;
+    }
 
     channel.send("Работаю...");
 
     const { guild } = channel;
-    const { admin, streamer, error } = await validateArgs(msg, args[0], args[1]);
+    const { error } = await validateArgs(msg, adminRole);
 
     if (error)
     {
@@ -70,12 +68,16 @@ module.exports = {
 
     try
     {
-      const settings = await ServerSettings.create({ name: guild.name, adminRole: admin, streamer: streamer });
+      const settings = await ServerSettings.create({
+        guildId: channel.guild.id,
+        name: guild.name,
+        adminRole: adminRole
+      });
 
-      settings ? channel.send("Настройки сохранены") : channel.send("Пройзошла ошибка");
+      settings ? channel.send("Настройки сохранены :ok_hand:") : channel.send("Пройзошла ошибка");
     } catch (e)
     {
-      channel.send("Пройзошла ошибка");
+      channel.send("Пройзошла ошибка :anger:");
     }
   }
 };
