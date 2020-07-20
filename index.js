@@ -2,9 +2,7 @@ const fs      = require('fs');
 const Discord = require('discord.js');
 const dotenv  = require("dotenv");
 
-const { token, prefix }   = require('./config.json');
-const { RestrictedWord }  = require('./models/word.restricted');
-const { ServerSettings }  = require('./models/server.settings');
+const { token, prefix } = require('./config.json');
 
 dotenv.config();
 
@@ -59,6 +57,16 @@ const handleCommandMessage = async message =>
       return;
     }
 
+    if (command.adminOnly)
+    {
+      const { hasAdminRole } = require("./services/client");
+      const { member, channel } = message;
+
+      const admin = await hasAdminRole(member, channel.guild.name);
+
+      if (!admin) { return; };
+    }
+
     if (command.args && !args.length)
     {
       message.channel.send('а где параметры команды?');
@@ -94,20 +102,33 @@ const onMessage = async message =>
   }
 };
 
+// assign all commands to client
 fs.readdirSync('./commands')
   .filter(file => file.endsWith('.js'))
-  .forEach(file => {
+  .forEach(file =>
+  {
     const command = require(`./commands/${file}`);
 
     client.commands.set(command.name, command);
   });
 
-client.on('ready', () =>
-{
-  RestrictedWord.sync();
-  ServerSettings.sync();
+// sync all models
+fs.readdirSync("./models")
+  .filter(file => file.endsWith(".js"))
+  .forEach(file =>
+  {
+    const { model } = require(`./models/${file}`);
 
+    model.sync();
+  });
+
+client.on('ready', async () =>
+{
   client.user.setActivity("お前は何を見ていますか？");
+
+  const { initClipsSchedulersAll } = require("./services/twitch");
+
+  await initClipsSchedulersAll();
 
   console.log(`Logged in as ${client.user.tag}!`);
 });
@@ -115,3 +136,5 @@ client.on('ready', () =>
 client.on('message', onMessage);
 
 client.login(token);
+
+module.exports = { client };
