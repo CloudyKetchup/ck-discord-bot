@@ -9,5 +9,6 @@ const RestrictedWord = sequelize.define("RestrictedWord", {
 });
 
 module.exports = {
-  RestrictedWord: RestrictedWord
+  RestrictedWord,
+  model: RestrictedWord
 };
