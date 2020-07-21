@@ -2,9 +2,11 @@ const { sequelize } = require("../sequelize");
 const { Sequelize } = require("sequelize");
 
 const RestrictedWord = sequelize.define("RestrictedWord", {
+	guildId: {
+		type: Sequelize.STRING
+	},
   name: {
-    type: Sequelize.STRING,
-    unique: true
+    type: Sequelize.STRING
   }
 });
 
