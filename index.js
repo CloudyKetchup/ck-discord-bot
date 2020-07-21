@@ -11,6 +11,7 @@ client.commands = new Discord.Collection();
 
 const checkRestrict = async message =>
 {
+	const { RestrictedWord } = require("./models/word.restricted");
   const Sequelize = require('sequelize');
   const words     = message.content.trim().split(" ");
 
@@ -20,6 +21,7 @@ const checkRestrict = async message =>
     {
       const restricted = await RestrictedWord.findOne({
         where: {
+					guildId: message.guild.id,
           name: {
             [Sequelize.Op.like]: word.replace(/[^a-zA-Z ]/g, "")
           }
@@ -31,7 +33,10 @@ const checkRestrict = async message =>
         message.delete();
         return true;
       }
-    } catch (e) {}
+		} catch (e)
+		{
+			console.log(e);
+		}
   }));
 
   return restrited.some(r => r);
@@ -59,7 +64,7 @@ const handleCommandMessage = async message =>
 
     if (command.adminOnly)
     {
-      const { hasAdminRole } = require("./services/client");
+      const { hasAdminRole } 		= require("./services/client");
       const { member, channel } = message;
 
       const admin = await hasAdminRole(member, channel.guild.name);
