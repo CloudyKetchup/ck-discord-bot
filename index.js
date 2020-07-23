@@ -44,8 +44,26 @@ const checkRestrict = async message =>
 
 const handleTextMessage = async message =>
 {
-  const restricted = await checkRestrict(message);
+  await checkRestrict(message);
 };
+
+const commandAllowed = async (command, message) =>
+{
+  switch (true)
+  {
+    case !command:
+    case command.suspended:
+      return { valid: false };
+    case command.adminOnly:
+      const { hasAdminRole } = require("./services/client");
+      const { member, channel } = message;
+
+      const admin = await hasAdminRole(member, channel.guild.name);
+
+      if (!admin) { return { mess: "not admin", valid: false }; }
+    default: return { valid: true };
+  };
+}
 
 const handleCommandMessage = async message =>
 {
@@ -56,21 +74,9 @@ const handleCommandMessage = async message =>
   {
     const command = client.commands.get(commandName);
 
-    if (!command)
-    {
-      message.channel.send("такой команды нету");
-      return;
-    }
+    const { valid } = await commandAllowed(command, message);
 
-    if (command.adminOnly)
-    {
-      const { hasAdminRole } 		= require("./services/client");
-      const { member, channel } = message;
-
-      const admin = await hasAdminRole(member, channel.guild.name);
-
-      if (!admin) { return; };
-    }
+    if (!valid) { return; }
 
     if (command.args && !args.length)
     {
