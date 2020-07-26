@@ -67,8 +67,11 @@ const commandAllowed = async (command, message) =>
 
 const handleCommandMessage = async message =>
 {
-  const args = message.content.slice(prefix.length).split(/ +/);
-  const commandName = args.shift().toLowerCase();
+  const words = message.content.slice(prefix.length).split(/\<(.*?)\>/);
+  const args  = words.filter(word => word.trim().length !== 0);
+  const commandName = words[0].trim();
+
+  args.shift(); //remove command name from arguments
 
   try
   {
@@ -120,6 +123,7 @@ fs.readdirSync('./commands')
   {
     const command = require(`./commands/${file}`);
 
+    console.log("--> ✅ " + command.name);
     client.commands.set(command.name, command);
   });
 
