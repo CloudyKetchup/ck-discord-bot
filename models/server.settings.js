@@ -9,7 +9,8 @@ const ServerSettings = sequelize.define("ServerSettings", {
   name: {
     type: DataTypes.STRING
   },
-  adminRole: { type: DataTypes.STRING }
+  adminRole: { type: DataTypes.STRING },
+  twitchModeratorRole: { type: DataTypes.STRING }
 });
 
 module.exports = {

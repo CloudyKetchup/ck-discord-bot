@@ -6,7 +6,16 @@ const getEmbed = (guild, settings, color = "#fa4437") =>
 		.setColor(color)
 		.setTitle("Настройки сервера")
 		.setAuthor(guild.name, guild.iconURL({ dynamic: true }))
-		.addFields({ name: "Роль админа", value: settings.adminRole });
+		.addFields(
+			{
+				name: "Роль админа",
+				value: settings.adminRole
+			},
+			{
+				name: "Роль твич модератора",
+				value: settings.twitchModeratorRole
+			}
+		);
 
 	return embed;
 };

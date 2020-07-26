@@ -1,23 +1,25 @@
 const { ServerSettings } = require("../models/server.settings");
 
-const validateAdmin = (msg, admin) =>
+const roleExist = (channel, role) =>
 {
-  const roleExist = msg.channel.guild.roles.cache.some(r => r.name === admin);
+  const roleExist = channel.guild.roles.cache.some(r => r.name === role);
 
   return roleExist;
 };
 
-const validateArgs = async (msg, admin) =>
+const validateArgs = async (msg, admin, twitchModerator) =>
 {
   if (!admin) return { error: "А где админ?" };
 
-  const adminValid = validateAdmin(msg, admin);
+  const adminValid = roleExist(msg.channel, admin);
+  const twitchModerValid = roleExist(msg.channel, twitchModerator);
 
   if (!adminValid)
   {
-    return {
-      error: `Роли '${admin}' не сушествует`
-    };
+    return { error: `Роли '${admin}' не сушествует` };
+  } else if (!twitchModerValid)
+  {
+    return { error: `Роли '${twitchModerator}' не сушествует` }
   }
   return { error: null };
 };
@@ -35,14 +37,15 @@ const settingsExist = async guildId =>
 
 module.exports = {
   validateArgs,
-  name: "server--setup",
+  name: "setup",
   description: "Setup server",
   args: true,
-  usage: `<adminRole>`,
+  usage: `<adminRole> <twitchModeratorRole>`,
   async execute(msg, args)
   {
     const { channel } = msg;
-    const adminRole = args[0];
+    const adminRole   = args[0];
+    const twitchModeratorRole = args[1];
 
     if (await settingsExist(channel.guild.id))
     {
@@ -57,7 +60,7 @@ module.exports = {
     channel.send("Работаю...");
 
     const { guild } = channel;
-    const { error } = await validateArgs(msg, adminRole);
+    const { error } = await validateArgs(msg, adminRole, twitchModeratorRole);
 
     if (error)
     {
@@ -71,7 +74,8 @@ module.exports = {
       const settings = await ServerSettings.create({
         guildId: channel.guild.id,
         name: guild.name,
-        adminRole: adminRole
+        adminRole: adminRole,
+        twitchModeratorRole: twitchModeratorRole
       });
 
       settings ? channel.send("Настройки сохранены :ok_hand:") : channel.send("Пройзошла ошибка");
