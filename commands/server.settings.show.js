@@ -6,20 +6,31 @@ module.exports = {
   args: false,
   async execute(msg, _args)
   {
+    const { channel } = msg;
     const settings = await ServerSettings.findOne({ where: { name: msg.channel.guild.name } });
 
     if (settings)
     {
       if (msg.member.roles.cache.some(r => r.name === settings.adminRole))
       {
-        msg.channel.send(`Настройки:\n Роль админа -> ${settings.adminRole}`);
+        const { getEmbed } = require("../embeds/server.settings.embed");
+        const { client }   = require("../index");
+
+        const bot = channel.guild
+          .members
+          .cache
+          .array()
+          .find(member => member.user.id === client.user.id);
+
+        channel.send(getEmbed(channel.guild, settings, bot.displayHexColor));
       }
     } else
     {
-      const setup = require("./server.setup");
-      const { prefix } = require("../config.json");
+      const { name, usage } = require("./server.setup");
+      const { prefix }      = require("../config.json");
 
-      msg.channel.send(`Настройки cервака отсутсвуют, ${prefix}${setup.name} ${setup.usage}`);
+      channel.send(`Настройки cервака отсутсвуют, Команда ${prefix}${name} ${usage}`);
+      channel.send(`Ну например ${prefix}${name} Админ`);
     }
   }
 };

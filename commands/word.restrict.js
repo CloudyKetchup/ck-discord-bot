@@ -1,11 +1,11 @@
 const { RestrictedWord } = require("../models/word.restricted");
 const { ServerSettings } = require("../models/server.settings");
 
-const restrict = async word =>
+const restrict = async (guildId, word) =>
 {
   try
   {
-    const save = await RestrictedWord.create({ name: word });
+    const save = await RestrictedWord.create({ guildId: guildId, name: word });
 
     return { word: save };
   } catch (e)
@@ -17,17 +17,18 @@ const restrict = async word =>
     return { e: "Error happened" };
   }
 };
-
+//FIXME: fix
 module.exports = {
   name: "restrict",
   description: "Add a word to restricted words list",
+  adminOnly: true,
   args: true,
   usage: "<word>",
   async execute(msg, args)
   {
     const restrictWord = args[0];
     const { channel, member } = msg;
-    const settings = await ServerSettings.findOne({ where: { name: channel.guild.name } });
+    const settings = await ServerSettings.findOne({ where: { guildId: channel.guild.id }});
 
     if (!settings)
     {
@@ -37,25 +38,17 @@ module.exports = {
       channel.send(`Сервер не настроен, настройте с помошью -> ${prefix}${setup.name}${setup.usage}`);
       return;
     }
-    const adminRole = settings.adminRole;
+		const { word, e } = await restrict(channel.guild.id, restrictWord);
 
-    if (member.roles.cache.some(r => r.name === adminRole))
+    if (word)
     {
-      const { word, e } = await restrict(restrictWord);
-
-      if (word)
-      {
-        channel.send(`'${word.name}' было добавлено в список запрещенных слов`);
-      } else if (e === "Word already exist")
-      {
-        channel.send(`Слово ${restrictWord} уже сушествует в списке запрещенных слов`);
-      } else
-      {
-        channel.send(`пройзошла ошибка`);
-      }
+      channel.send(`'${word.name}' было добавлено в список запрещенных слов`);
+    } else if (e === "Word already exist")
+    {
+      channel.send(`Слово ${restrictWord} уже сушествует в списке запрещенных слов`);
     } else
     {
-      channel.send(`эту команду могут использовать только люди с ролю '${adminRole}'`);
+      channel.send(`пройзошла ошибка`);
     }
   }
 };

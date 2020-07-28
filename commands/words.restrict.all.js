@@ -7,22 +7,37 @@ module.exports = {
   usage: "ну например <limit 25>",
   async execute(msg, args)
   {
+		const { channel } = msg;
     switch (args)
     {
       case undefined:
       case args[0] !== "limit":
       case !args[1]:
-        msg.channel.send("правильно будет 'limit <цифра>' например 'limit 25'");
+        channel.send("правильно будет 'limit <цифра>' например 'limit 25'");
         break;
       default:
         const limit = 15;
-
         const restricted = await RestrictedWord.findAll({ limit: parseInt(args[1]) || limit });
 
         if (restricted.length > 0)
-          msg.channel.send(`Вот список:\n${restricted.map(word => ` ->  ${word.name}\n`).join("")}`);
+        {
+          const { client } = require("../index");
+
+          const bot = channel.guild
+            .members
+            .cache
+            .array()
+            .find(member => member.user.id === client.user.id);
+
+          if (bot)
+          {
+            const { getEmbed } = require("../embeds/words.restricted.embed");
+
+            channel.send(getEmbed(restricted, bot.displayHexColor))
+          }
+        }
         else
-          msg.channel.send("Список пуст");
+          channel.send("Список пуст");
         break;
     }
   }

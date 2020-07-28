@@ -2,9 +2,7 @@ const fs      = require('fs');
 const Discord = require('discord.js');
 const dotenv  = require("dotenv");
 
-const { token, prefix }   = require('./config.json');
-const { RestrictedWord }  = require('./models/word.restricted');
-const { ServerSettings }  = require('./models/server.settings');
+const { token, prefix } = require('./config.json');
 
 dotenv.config();
 
@@ -13,6 +11,7 @@ client.commands = new Discord.Collection();
 
 const checkRestrict = async message =>
 {
+	const { RestrictedWord } = require("./models/word.restricted");
   const Sequelize = require('sequelize');
   const words     = message.content.trim().split(" ");
 
@@ -22,6 +21,7 @@ const checkRestrict = async message =>
     {
       const restricted = await RestrictedWord.findOne({
         where: {
+					guildId: message.guild.id,
           name: {
             [Sequelize.Op.like]: word.replace(/[^a-zA-Z ]/g, "")
           }
@@ -33,7 +33,10 @@ const checkRestrict = async message =>
         message.delete();
         return true;
       }
-    } catch (e) {}
+		} catch (e)
+		{
+			console.log(e);
+		}
   }));
 
   return restrited.some(r => r);
@@ -41,23 +44,46 @@ const checkRestrict = async message =>
 
 const handleTextMessage = async message =>
 {
-  const restricted = await checkRestrict(message);
+  await checkRestrict(message);
 };
+
+const commandAllowed = async (command, message) =>
+{
+  switch (true)
+  {
+    case !command:
+    case command.suspended:
+      return { valid: false };
+    case command.adminOnly:
+      const { hasAdminRole } = require("./services/client");
+      const { member, channel } = message;
+
+      const admin = await hasAdminRole(member, channel.guild.name);
+
+      if (!admin) { return { mess: "not admin", valid: false }; }
+    default: return { valid: true };
+  };
+}
 
 const handleCommandMessage = async message =>
 {
-  const args = message.content.slice(prefix.length).split(/ +/);
-  const commandName = args.shift().toLowerCase();
+  // get all words without "<" ">"
+  let words = message.content.slice(prefix.length).split(/\<(.*?)\>/);
+  // remoe "<" ">" and "#" from all words
+  words = words.map(word => word.replace(/[< # >]/g, ""));
+  // remove all blank words
+  const args  = words.filter(word => word.trim().length !== 0);
+  const commandName = words[0].trim();
+
+  args.shift(); //remove command name from arguments
 
   try
   {
     const command = client.commands.get(commandName);
 
-    if (!command)
-    {
-      message.channel.send("такой команды нету");
-      return;
-    }
+    const { valid } = await commandAllowed(command, message);
+
+    if (!valid) { return; }
 
     if (command.args && !args.length)
     {
@@ -94,20 +120,34 @@ const onMessage = async message =>
   }
 };
 
+// assign all commands to client
 fs.readdirSync('./commands')
   .filter(file => file.endsWith('.js'))
-  .forEach(file => {
+  .forEach(file =>
+  {
     const command = require(`./commands/${file}`);
 
+    console.log("--> ✅ " + command.name);
     client.commands.set(command.name, command);
   });
 
-client.on('ready', () =>
-{
-  RestrictedWord.sync();
-  ServerSettings.sync();
+// sync all models
+fs.readdirSync("./models")
+  .filter(file => file.endsWith(".js"))
+  .forEach(file =>
+  {
+    const { model } = require(`./models/${file}`);
 
+    model.sync();
+  });
+
+client.on('ready', async () =>
+{
   client.user.setActivity("お前は何を見ていますか？");
+
+  const { initClipsSchedulersAll } = require("./services/twitch");
+
+  await initClipsSchedulersAll();
 
   console.log(`Logged in as ${client.user.tag}!`);
 });
@@ -115,3 +155,5 @@ client.on('ready', () =>
 client.on('message', onMessage);
 
 client.login(token);
+
+module.exports = { client };
