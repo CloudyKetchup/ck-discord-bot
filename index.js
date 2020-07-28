@@ -1,11 +1,20 @@
 const fs      = require('fs');
 const Discord = require('discord.js');
 const dotenv  = require("dotenv");
-
-const { token, prefix } = require('./config.json');
+const { configValid } = require("./bot/config.check");
 
 dotenv.config();
 
+const configCheckResult = configValid();
+
+if (!configCheckResult.valid)
+{
+  console.error(configCheckResult.error);
+  console.error("Shutting down");
+
+  process.exit()
+}
+const { token, prefix } = require('./config.json');
 const client    = new Discord.Client();
 client.commands = new Discord.Collection();
 
@@ -143,7 +152,8 @@ fs.readdirSync("./models")
 
 client.on('ready', async () =>
 {
-  client.user.setActivity("お前は何を見ていますか？");
+  const { version } = require("./config.json");
+  client.user.setActivity(version);
 
   const { initClipsSchedulersAll } = require("./services/twitch");
 
