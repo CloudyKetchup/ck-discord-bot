@@ -11,8 +11,14 @@ const execute = async (msg, args) =>
 
 	if (!isNaN(count))
 	{
-		msg.delete();
-		await channel.bulkDelete(count);
+		try
+		{
+			msg.delete();
+			await channel.bulkDelete(count);
+		} catch(e)
+		{
+			console.log(e);
+		}
 	}
 };
 
