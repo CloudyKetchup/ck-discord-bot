@@ -17,7 +17,7 @@ const restrict = async (guildId, word) =>
     return { e: "Error happened" };
   }
 };
-//FIXME: fix
+
 module.exports = {
   name: "restrict",
   description: "Add a word to restricted words list",
@@ -27,7 +27,7 @@ module.exports = {
   async execute(msg, args)
   {
     const restrictWord = args[0];
-    const { channel, member } = msg;
+    const { channel }  = msg;
     const settings = await ServerSettings.findOne({ where: { guildId: channel.guild.id }});
 
     if (!settings)
