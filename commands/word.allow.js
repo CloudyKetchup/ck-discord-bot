@@ -25,7 +25,12 @@ module.exports = {
     const word = args[0];
     const { channel, member } = msg;
 
-    const settings = await ServerSettings.findOne({ where: { name: channel.guild.name } });
+    const settings = await ServerSettings.findOne({
+      where: {
+        guildId: channel.guild.id,
+        name: channel.guild.name
+      }
+    });
 
     if (!settings)
     {

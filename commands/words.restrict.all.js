@@ -17,7 +17,12 @@ module.exports = {
         break;
       default:
         const limit = 15;
-        const restricted = await RestrictedWord.findAll({ limit: parseInt(args[1]) || limit });
+        const restricted = await RestrictedWord.findAll({
+          where: {
+            guildId: channel.guild.id
+          },
+          limit: parseInt(args[1]) || limit
+        });
 
         if (restricted.length > 0)
         {
