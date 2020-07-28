@@ -67,7 +67,11 @@ const commandAllowed = async (command, message) =>
 
 const handleCommandMessage = async message =>
 {
-  const words = message.content.slice(prefix.length).split(/\<(.*?)\>/);
+  // get all words without "<" ">"
+  let words = message.content.slice(prefix.length).split(/\<(.*?)\>/);
+  // remoe "<" ">" and "#" from all words
+  words = words.map(word => word.replace(/[< # >]/g, ""));
+  // remove all blank words
   const args  = words.filter(word => word.trim().length !== 0);
   const commandName = words[0].trim();
 
